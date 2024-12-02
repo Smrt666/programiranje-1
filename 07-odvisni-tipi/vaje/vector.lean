@@ -37,15 +37,24 @@ inductive Finite : Naravno -> Type where
 
 
 def lookup {A : Type} {n : Naravno} : Vektor A n -> Finite n -> A :=
-  sorry
-
+  fun (v: Vektor A n) (m: Finite n) =>
+    match v, m with
+    | Vektor.sestavljen x _, Finite.fzero => x
+    | Vektor.sestavljen _ v', Finite.fsucc m' => lookup v' m'
 
 -- Včasih enakost tipov ni takoj očitna in jo moramo izpeljati
 -- Dopolnite naslednjo definicijo, vse potrebne leme pa dokažite kar s taktiko `sorry`.
 
-def stakni_vektorja' : {A : Type} → {m n : Naravno} → Vektor A m → Vektor A n → Vektor A (plus n m) :=
+def add_comm : {m n : Naravno} → plus m n = plus n m := by
+  sorry
+
+def stakni_vektorja' : {A : Type} → {m n : Naravno} → Vektor A m → Vektor A n → Vektor A (plus n m) := by
   sorry
 
 -- Uporabite samo definicijo `stakni_vektorja'` in taktike `rw` in `exact`.
 def stakni_vektorja'' : {A : Type} → {m n : Naravno} → Vektor A m → Vektor A n → Vektor A (plus m n) :=
-  sorry
+  by
+    intro A m n xs ys
+    have xx := stakni_vektorja' xs ys
+    rw [add_comm]
+    exact xx

@@ -4,7 +4,9 @@ variable (r : Prop)
 
 -- Izjave napišite na list papirja, nato pa jih dokažite v datoteki.
 
-example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) :=
+example : (¬ ∃ x, p x) ↔ (∀ x, ¬ p x) := by
+  constructor
+  intro h x hp
   sorry
 
 example : (r → ∀ x, p x) ↔ (∀ x, r → p x) :=
