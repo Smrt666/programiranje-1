@@ -1,3 +1,5 @@
+let endl () = print_endline "";
+
 (*----------------------------------------------------------------------------*
  # Abstrakcija
 [*----------------------------------------------------------------------------*)
@@ -20,9 +22,13 @@ module type NAT = sig
 
   val eq  : t -> t -> bool
   val zero : t
-  (* Dodajte manjkajoče! *)
-  (* val to_int : t -> int *)
-  (* val of_int : int -> t *)
+  val one : t
+  val to_int : t -> int
+  val of_int : int -> t
+
+  val ( ++ ) : t -> t -> t
+  val ( -- ) : t -> t -> t
+  val ( ** ) : t -> t -> t
 end
 
 (*----------------------------------------------------------------------------*
@@ -34,11 +40,16 @@ end
 [*----------------------------------------------------------------------------*)
 
 module Nat_int : NAT = struct
-
   type t = int
-  let eq x y = failwith "later"
+  let eq x y = (x = y)
   let zero = 0
-  (* Dodajte manjkajoče! *)
+  let one = 1
+  let to_int (x: t): int = x
+  let of_int (x: int): t = x
+
+  let ( ++ ) x y = x + y
+  let ( -- ) x y = x - y
+  let ( ** ) x y = x * y
 
 end
 
@@ -53,12 +64,37 @@ end
 
 module Nat_peano : NAT = struct
 
-  type t = unit (* To morate spremeniti! *)
-  let eq x y = failwith "later"
-  let zero = () (* To morate spremeniti! *)
-  (* Dodajte manjkajoče! *)
+  type t = Zero | Succ of t
+  let eq (x: t) (y: t) = (x = y)
+  let zero = Zero
+  let one = Succ Zero
+  let rec to_int x = match x with
+  | Zero -> 0
+  | Succ x -> 1 + to_int x
+  let of_int x = 
+    let rec aux x = match x with
+    | 0 -> Zero
+    | x -> Succ (aux (x-1))
+    in if x >= 0 then aux x else failwith "negative number"
 
-end
+  let rec ( ++ ) x y = match x with
+  | Zero -> y
+  | Succ z -> Succ (z ++ y) 
+
+  let rec ( -- ) x y = match x, y with
+  | y, Zero -> x
+  | Succ x, Succ y -> x -- y
+  | _ -> failwith "negative number"
+
+  let rec ( ** ) x y = match x, y with
+  | Zero, _ -> Zero
+  | Succ x, y -> y ++ (x ** y)
+end;;
+
+(* let test = (
+  if Nat_peano.of_int 5 = Nat_peano.of_int 5 then print_endline "true" else print_endline "false";
+  if Nat_peano.of_int 4 = Nat_peano.of_int 5 then print_endline "true" else print_endline "false";
+) *)
 
 (*----------------------------------------------------------------------------*
  Z ukazom `let module ImeModula = ... in ...` lahko modul definiramo samo
@@ -76,12 +112,22 @@ end
  `Nat`.
 [*----------------------------------------------------------------------------*)
 
-let sum_nat_100 = 
+let sum_nat_100, prod, diff = 
   (* let module Nat = Nat_int in *)
   let module Nat = Nat_peano in
-  Nat.zero (* to popravite na ustrezen izračun *)
-  (* |> Nat.to_int *)
-(* val sum_nat_100 : int = 5050 *)
+  let ( ++ ) = Nat.( ++ ) in
+  let ( ** ) = Nat.( ** ) in
+  let ( -- ) = Nat.( -- ) in
+  let rec sum n acc = if n = 0 then acc else sum (n-1) (acc ++ (Nat.of_int n)) in
+  sum 100 Nat.zero |> Nat.to_int, 
+  ((Nat.one ++ Nat.one) ** (Nat.one ++ Nat.one ++ Nat.one)) |> Nat.to_int,
+  ((Nat.of_int 5) -- (Nat.of_int 3)) |> Nat.to_int;;
+;;
+
+print_int sum_nat_100; endl ();
+print_int prod; endl ();
+print_int diff; endl ();;
+
 
 (*----------------------------------------------------------------------------*
  ## Kompleksna števila
@@ -135,7 +181,15 @@ let sum_nat_100 =
 module type COMPLEX = sig
   type t
   val eq : t -> t -> bool
-  (* Dodajte manjkajoče! *)
+  val zero : t
+  val one : t
+  val i : t
+  val neg : t -> t
+  val conj : t -> t
+  val ( ++ ) : t -> t -> t
+  val ( ** ) : t -> t -> t
+
+  val to_string : t -> string
 end
 
 (*----------------------------------------------------------------------------*
@@ -148,7 +202,15 @@ module Cartesian : COMPLEX = struct
   type t = {re : float; im : float}
 
   let eq x y = failwith "later"
-  (* Dodajte manjkajoče! *)
+  let zero = {re = 0.; im = 0.}
+  let one = {re = 1.; im = 0.}
+  let i = {re = 0.; im = 1.}
+  let neg x = {re = -.x.re; im = -.x.im}
+  let conj x = {x with im = -.x.im}
+  let ( ++ ) x y = {re = x.re +. y.re; im = x.im +. y.im}
+  let ( ** ) x y = {re = x.re *. y.re -. x.im *. y.im; im = x.re *. y.im +. x.im *. y.re}
+
+  let to_string x = Printf.sprintf "%.2f + %.2fi" x.re x.im
 
 end
 
@@ -168,7 +230,35 @@ module Polar : COMPLEX = struct
   let rad_of_deg deg = (deg /. 180.) *. pi
   let deg_of_rad rad = (rad /. pi) *. 180.
 
-  let eq x y = failwith "later"
-  (* Dodajte manjkajoče! *)
+  let eq x y = if x.magn = 0. && x.magn = y.magn then true else ((x.magn = y.magn) && (mod_float (x.arg -. y.arg) (2. *. pi) = 0.))
+  let zero = {magn = 0.; arg = 0.}
+  let one = {magn = 1.; arg = 0.}
+  let i = {magn = 1.; arg = pi /. 2.}
+  let neg x = {x with arg = mod_float (x.arg +. pi) (2. *. pi)}
 
-end
+  let conj x = {x with arg = mod_float (-.x.arg) (2. *. pi)}
+
+  let ( ++ ) x y = 
+    let x_re = x.magn *. cos x.arg in
+    let x_im = x.magn *. sin x.arg in
+    let y_re = y.magn *. cos y.arg in
+    let y_im = y.magn *. sin y.arg in
+    let re = x_re +. y_re in
+    let im = x_im +. y_im in
+    {magn = sqrt (re *. re +. im *. im); arg = atan2 im re}
+  let ( ** ) x y = {magn = x.magn *. y.magn; arg = mod_float (x.arg +. y.arg) (2. *. pi)}
+
+  let to_string x = Printf.sprintf "%.2f + %.2fi" (x.magn *. cos x.arg) (x.magn *. sin x.arg)
+
+end;;
+
+let module Complex = Polar in
+  let ( ++ ) = Complex.( ++ ) in
+  let ( ** ) = Complex.( ** ) in
+  let two = Complex.one ++ Complex.one in
+  let four = two ** two in
+  let i = Complex.i in
+  let a = two ++ i ** four in
+  let b = Complex.one ++ i in
+  let s = a ++ b in
+  print_string (Complex.to_string s); endl ();;
