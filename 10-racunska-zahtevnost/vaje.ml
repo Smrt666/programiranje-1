@@ -1,3 +1,7 @@
+let print_array a = 
+  Array.iter (fun x -> print_int x; print_string " ") a;
+  print_newline ()
+
 (* 
 Natančno definirajte pogoje, da funkcija `f` uredi seznam. 
 *)
@@ -18,13 +22,22 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
  - : int list = [7]
 [*----------------------------------------------------------------------------*)
 
+let rec insert y xs = 
+  match xs with
+  | [] -> [y]
+  | x :: xs' -> if y < x then y :: x :: xs' else x :: insert y xs'
+
+;; assert (insert 9 [0; 2] = [0; 2; 9])
+;; assert (insert 1 [4; 5] = [1; 4; 5])
+;; assert (insert 7 [] = [7])
+
 
 (*----------------------------------------------------------------------------*]
  Prazen seznam je že urejen. Funkcija [insert_sort] uredi seznam tako da
  zaporedoma vstavlja vse elemente seznama v prazen seznam.
 [*----------------------------------------------------------------------------*)
 
-
+let insert_sort = List.fold_left (fun acc x -> insert x acc) []
 
 (*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*]
  Urejanje z Izbiranjem
@@ -72,6 +85,17 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
  - : int array = [|0; 4; 2; 3; 1|]
 [*----------------------------------------------------------------------------*)
 
+let swap a i j = 
+  let t = a.(i) in
+  a.(i) <- a.(j);
+  a.(j) <- t
+
+let test = [|0; 1; 2; 3; 4|];; 
+swap test 1 4;;
+assert (test = [|0; 4; 2; 3; 1|]);;
+
+
+
 
 (*----------------------------------------------------------------------------*]
  Funkcija [index_min a lower upper] poišče indeks najmanjšega elementa tabele
@@ -80,11 +104,60 @@ Natančno definirajte pogoje, da funkcija `f` uredi seznam.
  index_min [|0; 2; 9; 3; 6|] 2 4 = 4
 [*----------------------------------------------------------------------------*)
 
+let index_min a lower upper = 
+  let min = ref lower in
+  for i = lower + 1 to upper do
+    if a.(i) < a.(!min) then min := i
+  done;
+  !min
+
+
+;; 
+
+let test = [|0; 2; 9; 3; 6|];;
+assert (index_min test 2 4 = 3);;
+assert (index_min test 3 4 = 3);;
+assert (index_min test 0 4 = 0);;
+assert (index_min test 4 4 = 4);;
 
 (*----------------------------------------------------------------------------*]
  Funkcija [selection_sort_array] implementira urejanje z izbiranjem na mestu. 
 [*----------------------------------------------------------------------------*)
 
+let selection_sort_array a =
+  if Array.length a > 1 then 
+  let rec aux l r = 
+    if not (l = r) then (
+    swap a l (index_min a l r);
+    aux (l + 1) r)
+  in
+  aux 0 (Array.length a - 1)
+
+;;
+let test = [|5; 7; 1; 3; 2|];;
+selection_sort_array test;;
+assert (test = [|1; 2; 3; 5; 7|]);;
+
+let test = [||];;
+selection_sort_array test;;
+assert (test = [||]);;
+
+let test = [|1; 2; 3; 4; 5|];;
+selection_sort_array test;;
+assert (test = [|1; 2; 3; 4; 5|]);;
+
+let test = [|1|];;
+selection_sort_array test;;
+assert (test = [|1|]);;
+
+let test = [|2; 1|];;
+selection_sort_array test;;
+assert (test = [|1; 2|]);;
+
+let test = [|1; 2|];;
+selection_sort_array test;;
+assert (test = [|1; 2|]);;
+  
 
 (*----------------------------------------------------------------------------*]
  Funkcija [min_and_rest list] vrne par [Some (z, list')] tako da je [z]
